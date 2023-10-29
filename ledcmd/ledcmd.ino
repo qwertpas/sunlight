@@ -41,8 +41,8 @@ void loop() {
     int duty_a = 255 - int(255 * percent_a);
     int duty_b = 255 - int(255 * percent_b);
 
-    analogWrite(4, duty_a);
-    analogWrite(5, duty_b);
+    analogWrite(4, duty_a); //blue 
+    analogWrite(5, duty_b); //orange ILLL
 
     delay(30);
 
