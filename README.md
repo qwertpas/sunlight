@@ -1,14 +1,14 @@
 ## TO DO:
 
-[x] Add a slider to the web page
-[x] Read values from the slider on the monitor
-[x] Add a slider that can control the LED intensity
-[] Add individual control sliders for the two LEDs
-[] Make the sliders more continuous (update in real time as you are moving the slider)
-[] Add a light intensity slider
-[] Add a temp control slider
-[] Add the feature to change password and name for the network 
-[] 
+- [x] Add a slider to the web page
+- [x] Read values from the slider on the monitor
+- [x] Add a slider that can control the LED intensity
+- [x] Add individual control sliders for the two LEDs
+- [] Make the sliders more continuous (update in real time as you are moving the slider)
+- [] Combine both the sliders into one (one end of the spectrum is pure orange and the other is pure blue)
+- [] Add a light intensity slider
+- [] Make the color temp slider based on the time of the day
+- [] Add the feature to change password and name for the network 
 
 
 ## Notes:
