@@ -7,8 +7,8 @@ void setup() {
     pinMode(5, OUTPUT);
 }
 
-float percent_a = 0.06;
-float percent_b = 0.06;
+float percent_a = 0.0;
+float percent_b = 0.0;
 // float cutoff = 0.06;
 
 void loop() {
@@ -18,7 +18,7 @@ void loop() {
         if (input.startsWith("a")) {
             String valueString = input.substring(1);
             int value = valueString.toInt();
-            if (value <= 30) {
+            if (value <= 100) {
                 percent_a = value/100.0;
                 Serial.print("percent_a has been set to ");
                 Serial.println(percent_a);
