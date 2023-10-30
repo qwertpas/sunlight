@@ -8,6 +8,8 @@
 - [x] Combine both the sliders into one (one end of the spectrum is pure orange and the other is pure blue)
 - [x] Add a light intensity slider
 - [] Make the color temp slider based on the time of the day
+- [] Add the auto and manual toggle
+- [] program the auto feauture
 - [] Add the feature to change password and name for the network 
 
 
