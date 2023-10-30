@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <math.h>
 
 /* Put your SSID & Password */
 const char* ssid = "Sunlight";  // Enter SSID here
@@ -15,8 +16,8 @@ ESP8266WebServer server(80);
 bool LED1status = LOW;
 bool LED2status = LOW;
 
-int orange_val = 0;
-int blue_val = 0;
+int C_val = 0;
+int I_val = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -44,8 +45,8 @@ void setup() {
   server.on("/led2off", handle_led2off);
   server.onNotFound(handle_NotFound);
 
-  server.on("/slider", handle_slider);
-  server.on("/slider2", handle_slider2);
+  server.on("/I_slider", handle_I_slider);
+  server.on("/C_slider", handle_C_slider);
   
   server.begin();
   Serial.println("HTTP server started");
@@ -94,25 +95,51 @@ void handle_NotFound(){
   server.send(404, "text/plain", "Not found");
 }
 
-void handle_slider() {
+void handle_C_slider() {
   String value = server.arg("value");
-  orange_val = value.toInt();
-  float percent_a = orange_val *  30/544.0 / 100.0;
-  int duty_a = 255 - int(255 * percent_a);
-  analogWrite(4, duty_a);
-  Serial.print("Set orange light to ");
-  Serial.println(percent_a);
-  server.send(200, "text/plain", "OK");
+  C_val = value.toInt(); 
+  update_lights();
 }
 
-void handle_slider2() {
+void handle_I_slider() {
   String value = server.arg("value");
-  blue_val = value.toInt();
-  float percent_b = blue_val *  30/544.0 / 100.0;
-  int duty_b = 255 - int(255 * percent_b);
+  I_val = value.toInt();
+  update_lights();
+}
+
+void update_lights(){
+  float orange_val = 0;
+  float blue_val = 0;
+  float cutoff = 0.05;
+  
+  if(I_val != 0){
+    float I_exp = 100*(exp(0.03*I_val)-1) / (exp(0.03*100)-1); //inverse log scaling
+    orange_val = I_exp*(100-C_val)*0.6/10000.0 + cutoff;
+    blue_val = I_exp*C_val*0.6/10000.0 + cutoff;
+
+    float net = orange_val + blue_val;
+    if(net > 0.6){
+      orange_val -= (net-0.6)/2.;
+      blue_val -= (net-0.6)/2.;
+    }
+    if(C_val == 0){
+      blue_val = 0;
+    }else if(C_val == 100){
+      orange_val = 0;
+    }
+
+  }
+  
+
+  int duty_a = 255 - int(255 * orange_val);
+  int duty_b = 255 - int(255 * blue_val);
+
+  analogWrite(4, duty_a);
   analogWrite(5, duty_b);
-  Serial.print("Set blue light to ");
-  Serial.println(percent_b);
+  Serial.print("orange: ");
+  Serial.print(orange_val);
+  Serial.print(", blue: ");
+  Serial.println(blue_val);
   server.send(200, "text/plain", "OK");
 }
 
@@ -144,35 +171,30 @@ String SendHTML(uint8_t led1stat,uint8_t led2stat){
   else
   {ptr +="<p>LED2 Status: OFF</p><a class=\"button button-on\" href=\"/led2on\">ON</a>\n";}
 
-  ptr += "<input type=\"range\" min=\"0\" max=\"544\" value=\"" + String(orange_val) + "\" id=\"slider\" onchange=\"updateSlider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
-  ptr += "<p>Orange: <span id=\"sliderValue\">" + String(orange_val) + "</span></p>\n";
-
-  ptr += "<input type=\"range\" min=\"0\" max=\"544\" value=\"" + String(blue_val) + "\" id=\"slider2\" onchange=\"updateSlider2(this.value)\" style=\"width: 100%; height: 30px;\">\n";
-  ptr += "<p>Blue: <span id=\"sliderValue2\">" + String(blue_val) + "</span></p>\n";
-
-  // ptr += "<input type=\"range\" min=\"0\" max=\"544\" value=\"0\" id=\"slider\" onchange=\"updateSlider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
-  // ptr += "<p>Orange: <span id=\"sliderValue\">0</span></p>\n";
+  ptr += "<input type=\"range\" min=\"0\" max=\"100\" value=\"" + String(C_val) + "\" id=\"C_slider\" oninput=\"update_C_slider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
+  ptr += "<p>Color: <span id=\"C_slider_value\">" + String(C_val) + "</span></p>\n";
 
 
-  // ptr += "<input type=\"range\" min=\"0\" max=\"544\" value=\"0\" id=\"slider2\" onchange=\"updateSlider2(this.value)\" style=\"width: 100%; height: 30px;\">\n";
-  // ptr += "<p>Blue: <span id=\"sliderValue2\">0</span></p>\n";
+
+  ptr += "<input type=\"range\" min=\"0\" max=\"100\" value=\"" + String(I_val) + "\" id=\"I_slider\" oninput=\"update_I_slider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
+  ptr += "<p>Intensity: <span id=\"I_slider_value\">" + String(I_val) + "</span></p>\n";
 
 
 
   ptr += "<script>\n";
-  ptr += "function updateSlider(value) {\n";
-  ptr += " document.getElementById('sliderValue').textContent = value;\n";
-  ptr += " document.body.style.backgroundColor = 'orange';\n";
+  ptr += "function update_C_slider(value) {\n";
+  ptr += " document.getElementById('C_slider_value').textContent = value;\n";
+  // ptr += " document.body.style.backgroundColor = 'orange';\n";
   ptr += " var xhttp = new XMLHttpRequest();\n";
-  ptr += " xhttp.open('GET', '/slider?value=' + value, true);\n";
+  ptr += " xhttp.open('GET', '/C_slider?value=' + value, true);\n";
   ptr += " xhttp.send();\n";
   ptr += "}\n";
 
-  ptr += "function updateSlider2(value) {\n";
-  ptr += " document.getElementById('sliderValue2').textContent = value;\n";
-  ptr += " document.body.style.backgroundColor = 'blue';\n";
+  ptr += "function update_I_slider(value) {\n";
+  ptr += " document.getElementById('I_slider_value').textContent = value;\n";
+  // ptr += " document.body.style.backgroundColor = 'blue';\n";
   ptr += " var xhttp = new XMLHttpRequest();\n";
-  ptr += " xhttp.open('GET', '/slider2?value=' + value, true);\n";
+  ptr += " xhttp.open('GET', '/I_slider?value=' + value, true);\n";
   ptr += " xhttp.send();\n";
   ptr += "}\n";
   ptr += "</script>\n";
