@@ -2,14 +2,23 @@
 
 - [x] Add a slider to the web page
 - [x] Read values from the slider on the monitor
+- [x] Make the slider retain its value when the page is reloaded
 - [x] Add a slider that can control the LED intensity
 - [x] Add individual control sliders for the two LEDs
 - [x] Make the sliders more continuous (update in real time as you are moving the slider)
 - [x] Combine both the sliders into one (one end of the spectrum is pure orange and the other is pure blue)
 - [x] Add a light intensity slider
-- [] Make the color temp slider based on the time of the day
+- [x] Make a slider based on color temperature
+- [] Find the relation between color temperature slider number and actual color temp reading
+- [x] Make the light cycle through a given time
+- [] Make the slider bigger (easier to move)
+- [] Make the color temp slider based on the time of the day (theory: linear mapping)
+- [] Add manual toggle for the time setting
+- [] make a function for calling the auto time duration
 - [] Add the auto and manual toggle
 - [] program the auto feauture
+- [] Add preset buttons on the app
+- [] GPS location and client side time
 - [] Add the feature to change password and name for the network 
 
 
