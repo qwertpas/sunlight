@@ -16,8 +16,12 @@ ESP8266WebServer server(80);
 bool LED1status = LOW;
 bool LED2status = LOW;
 
-int C_val = 0;
-int I_val = 0;
+int max_temp = 5800;
+int min_temp = 2700;
+
+int C_val = min_temp;
+int I_val = 90;
+
 
 void setup() {
   Serial.begin(115200);
@@ -51,6 +55,8 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
 }
+
+int color_dir = 1;
 void loop() {
   server.handleClient();
   
@@ -58,6 +64,19 @@ void loop() {
   {digitalWrite(2, HIGH);}
   else
   {digitalWrite(2, LOW);}
+
+  C_val += color_dir;
+  if(C_val > max_temp || C_val < min_temp) color_dir *= -1;
+
+  // if(C_val < min_temp) {
+  //   C_val = min_temp;
+  // }
+
+  update_lights();
+
+  float hours = 30/3600.;
+
+  delay(long(hours * 3.6e6/(max_temp-min_temp)/2.0)); //make the delay amt variable depending on button
 }
 
 void handle_OnConnect() {
@@ -101,6 +120,8 @@ void handle_C_slider() {
   update_lights();
 }
 
+//5800-2700K full color range if LED allowed to turn off
+
 void handle_I_slider() {
   String value = server.arg("value");
   I_val = value.toInt();
@@ -111,31 +132,37 @@ void update_lights(){
   float orange_val = 0;
   float blue_val = 0;
   float cutoff = 0.05;
+
+  float C_val100 = 100 * (C_val - min_temp) / (max_temp - min_temp);
   
   if(I_val != 0){
     float I_exp = 100*(exp(0.03*I_val)-1) / (exp(0.03*100)-1); //inverse log scaling
-    orange_val = I_exp*(100-C_val)*0.6/10000.0 + cutoff;
-    blue_val = I_exp*C_val*0.6/10000.0 + cutoff;
+    orange_val = I_exp*(100-C_val100)*0.6/10000.0 + cutoff;
+    blue_val = I_exp*C_val100*0.6/10000.0 + cutoff;
 
     float net = orange_val + blue_val;
     if(net > 0.6){
       orange_val -= (net-0.6)/2.;
       blue_val -= (net-0.6)/2.;
     }
-    if(C_val == 0){
-      blue_val = 0;
-    }else if(C_val == 100){
-      orange_val = 0;
-    }
+    // if(C_val100 == 0){
+    //   blue_val = 0;
+    // }else if(C_val100 == 100){
+    //   orange_val = 0;
+    // }
 
   }
-  
+
 
   int duty_a = 255 - int(255 * orange_val);
   int duty_b = 255 - int(255 * blue_val);
 
   analogWrite(4, duty_a);
   analogWrite(5, duty_b);
+
+  Serial.print("C_val: ");  
+  Serial.println(C_val);
+
   Serial.print("orange: ");
   Serial.print(orange_val);
   Serial.print(", blue: ");
@@ -171,13 +198,19 @@ String SendHTML(uint8_t led1stat,uint8_t led2stat){
   else
   {ptr +="<p>LED2 Status: OFF</p><a class=\"button button-on\" href=\"/led2on\">ON</a>\n";}
 
-  ptr += "<input type=\"range\" min=\"0\" max=\"100\" value=\"" + String(C_val) + "\" id=\"C_slider\" oninput=\"update_C_slider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
+  ptr += "<input type=\"range\" min=\"" + String(min_temp) + "\" max=\"" + String(max_temp) + "\" value=\"" + String(C_val) + "\" id=\"C_slider\" oninput=\"update_C_slider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
   ptr += "<p>Color: <span id=\"C_slider_value\">" + String(C_val) + "</span></p>\n";
 
 
 
   ptr += "<input type=\"range\" min=\"0\" max=\"100\" value=\"" + String(I_val) + "\" id=\"I_slider\" oninput=\"update_I_slider(this.value)\" style=\"width: 100%; height: 30px;\">\n";
   ptr += "<p>Intensity: <span id=\"I_slider_value\">" + String(I_val) + "</span></p>\n";
+
+  // ptr += "<input type=\"number\" min=\"0\" max=\"23\" value=\"0\" id=\"hour_input\" style=\"width: 100%; height: 30px;\">\n";
+  // ptr += "<p>Hour: <span id=\"hour_value\">0</span></p>\n";
+
+  // ptr += "<input type=\"number\" min=\"0\" max=\"59\" value=\"0\" id=\"minute_input\" style=\"width: 100%; height: 30px;\">\n";
+  // ptr += "<p>Minute: <span id=\"minute_value\">0</span></p>\n";
 
 
 
@@ -197,6 +230,22 @@ String SendHTML(uint8_t led1stat,uint8_t led2stat){
   ptr += " xhttp.open('GET', '/I_slider?value=' + value, true);\n";
   ptr += " xhttp.send();\n";
   ptr += "}\n";
+
+  // ptr += "document.getElementById('hour_input').addEventListener('input', function() {\n";
+  // ptr += " document.getElementById('hour_value').textContent = this.value;\n";
+  // ptr += " var xhttp = new XMLHttpRequest();\n";
+  // ptr += " xhttp.open('GET', '/hour_input?value=' + this.value, true);\n";
+  // ptr += " xhttp.send();\n";
+  // ptr += "});\n";
+
+  // ptr += "document.getElementById('minute_input').addEventListener('input', function() {\n";
+  // ptr += " document.getElementById('minute_value').textContent = this.value;\n";
+  // ptr += " var xhttp = new XMLHttpRequest();\n";
+  // ptr += " xhttp.open('GET', '/minute_input?value=' + this.value, true);\n";
+  // ptr += " xhttp.send();\n";
+  // ptr += "});\n";
+
+
   ptr += "</script>\n";
 
 
